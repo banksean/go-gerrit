@@ -1,0 +1,14 @@
+version: '2'
+services:
+  nginx:
+    build: nginx
+    ports:
+      - "8888:8888"
+    links:
+      - gerrit
+  gerrit:
+    build: gerrit
+    expose:
+      - "8080"
+#    volumes:
+#      - ./gerrit/review_site:/var/gerrit/review_site
