@@ -1,4 +1,5 @@
 version: '2'
+
 services:
   nginx:
     build: nginx
@@ -6,9 +7,17 @@ services:
       - "8888:8888"
     links:
       - gerrit
+
+  postgres:
+    image: postgres:9.5.3
+    environment:
+      - POSTGRES_DB=reviewdb
+      - POSTGRES_USER=gerrit2
+      - POSTGRES_PASSWORD=gerrit
+
   gerrit:
     build: gerrit
-    expose:
-      - "8080"
-#    volumes:
-#      - ./gerrit/review_site:/var/gerrit/review_site
+    ports:
+      - "29418:29418"
+    links:
+      - postgres
