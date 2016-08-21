@@ -6,3 +6,5 @@ set_gerrit_config() {
 
 set_gerrit_config auth.type HTTP
 set_gerrit_config auth.httpHeader X-Remote-User
+
+mv -v /gerrit.config $GERRIT_SITE/etc/gerrit.config
