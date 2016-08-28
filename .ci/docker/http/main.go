@@ -24,10 +24,7 @@ func main() {
 
 func handler(proxy *httputil.ReverseProxy) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, request *http.Request) {
-		// TODO auth handling
-
-
-		request.Header.Set("X-Remote-User", "Administrator")
+		log.Printf("%s %s", request.Method, request.URL)
 		proxy.ServeHTTP(w, request)
 	}
 }
