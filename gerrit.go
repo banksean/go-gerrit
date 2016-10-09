@@ -110,7 +110,9 @@ func (c *Client) NewRequest(method, urlStr string, body interface{}) (*http.Requ
 	}
 
 	// Apply Authentication
-	c.addAuthentication(req)
+	if err := c.addAuthentication(req); err != nil {
+		return nil, err
+	}
 
 	// Request compact JSON
 	// See https://gerrit-review.googlesource.com/Documentation/rest-api.html#output
@@ -170,8 +172,9 @@ func (c *Client) buildURLForRequest(urlStr string) (string, error) {
 		urlStr = urlStr[1:]
 	}
 
-	// If we are authenticated, lets apply the a/ prefix
-	if c.Authentication.HasAuth() == true {
+	// If we are authenticated, lets apply the a/ prefix but only if it has
+	// not already been applied.
+	if c.Authentication.HasAuth() == true && !strings.HasPrefix(urlStr, "a/") {
 		urlStr = "a/" + urlStr
 	}
 
@@ -193,23 +196,6 @@ func (c *Client) Do(req *http.Request, v interface{}) (*Response, error) {
 	resp, err := c.client.Do(req)
 	if err != nil {
 		return nil, err
-	}
-
-	// If the server responds with 401 Unauthorized and we're using digest
-	// authentication then generate an Authorization header and retry
-	// the request.
-	if resp.StatusCode == http.StatusUnauthorized && c.Authentication.HasDigestAuth() {
-		var digestAuthHeader string
-		digestAuthHeader, err = c.Authentication.digestAuthHeader(resp)
-		if err != nil {
-			return nil, err
-		}
-
-		req.Header.Set("Authorization", digestAuthHeader)
-		resp, err = c.client.Do(req)
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	// Wrap response
@@ -242,19 +228,65 @@ func (c *Client) Do(req *http.Request, v interface{}) (*Response, error) {
 	return response, err
 }
 
-func (c *Client) addAuthentication(req *http.Request) {
+func (c *Client) addAuthentication(req *http.Request) error {
 	// Apply HTTP Basic Authentication
-	if c.Authentication.HasBasicAuth() == true {
+	if c.Authentication.HasBasicAuth() {
 		req.SetBasicAuth(c.Authentication.name, c.Authentication.secret)
+		return nil
 	}
 
 	// Apply HTTP Cookie
-	if c.Authentication.HasCookieAuth() == true {
+	if c.Authentication.HasCookieAuth() {
 		req.AddCookie(&http.Cookie{
 			Name:  c.Authentication.name,
 			Value: c.Authentication.secret,
 		})
+		return nil
 	}
+
+	// Apply Digest Authentication.  If we're using digest based
+	// authentication we need to make a request, process the
+	// WWW-Authenticate header, then set the Authorization header on the
+	// incoming request.  We do not need to send a body along because
+	// the request itself should fail first.
+	if c.Authentication.HasDigestAuth() {
+		uri, err := c.buildURLForRequest(req.URL.RequestURI())
+		if err != nil {
+			return err
+		}
+
+		// WARNING: Don't use c.NewRequest here unless you like
+		// infinite recursion.
+		digestRequest, err := http.NewRequest(req.Method, uri, nil)
+		digestRequest.Header.Set("Accept", "*/*")
+		digestRequest.Header.Set("Content-Type", "application/json")
+		if err != nil {
+			return err
+		}
+
+		response, err := c.client.Do(digestRequest)
+		if err != nil {
+			return err
+
+		}
+
+		// When the function exits discard the rest of the
+		// body and close it.  This should cause go to
+		// reuse the connection.
+		defer io.Copy(ioutil.Discard, response.Body)
+		defer response.Body.Close()
+
+		if response.StatusCode == http.StatusUnauthorized {
+			authorization, err := c.Authentication.digestAuthHeader(response)
+
+			if err != nil {
+				return err
+			}
+			req.Header.Set("Authorization", authorization)
+		}
+	}
+
+	return nil
 }
 
 // DeleteRequest sends an DELETE API Request to urlStr with optional body.
