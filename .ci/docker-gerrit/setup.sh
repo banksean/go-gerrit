@@ -1,6 +1,7 @@
 #!/bin/bash
 
-ADDRESS=localhost
+ADDRESS="${ADDRESS:=localhost}"
+
 _=$(docker-machine active 2> /dev/null)
 if [ "$?" -eq "0" ]; then
     ADDRESS=$(docker-machine ip $active)
