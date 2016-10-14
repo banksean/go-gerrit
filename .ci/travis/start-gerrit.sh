@@ -9,3 +9,5 @@ private_key=$(GenerateSSHPrivateKey)
 AddAdminSSHKey $private_key
 
 echo "http://admin:secret@$(GerritAddress):$(PORT_HTTP)/" > gerrit-url
+echo $private_key > gerrit-private-key
+
