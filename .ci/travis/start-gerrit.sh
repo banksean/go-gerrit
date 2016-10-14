@@ -2,7 +2,7 @@
 
 # TODO - Remove '-x' from shebang
 
-[ -f helper-functions.sh ] || curl -o helper-functions.sh https://github.com/opalmer/docker-gerrittest/raw/master/helper-functions.sh --fail
+[ -f helper-functions.sh ] || curl -L -o helper-functions.sh https://github.com/opalmer/docker-gerrittest/raw/master/helper-functions.sh --fail
 . helper-functions.sh
 
 RunContainer
