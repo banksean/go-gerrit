@@ -13,6 +13,12 @@ first. For more complete details see
   instead of a hard coded value when comparing response codes.
 * Updated AccountInfo.AccountID to be omitted of empty (such as when 
   used in ApprovalInfo).
+* Fixed documentation for NewClient and moved fmt.Errorf call from
+  inside the function to a `ErrNoInstanceGiven` variable so it's
+  easier to compare against.
+* Updated internal function digestAuthHeader to return exported errors
+  (ErrWWWAuthenticateHeader*) rather than calling fmt.Errorf. This makes
+  it easier to test against externally and also fixes a lint issue too.
 
 ### 0.1.0
 
