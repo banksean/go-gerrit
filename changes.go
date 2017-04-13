@@ -272,6 +272,28 @@ type ChangeInfo struct {
 	BaseChange         string                  `json:"base_change,omitempty"`
 }
 
+type ChangeInput struct {
+        Project       string     `json:"project"`
+        Branch        string     `json:"branch"`
+        Subject       string     `json:"subject"`
+        Topic         string     `json:"topic,omitempty"`
+        Status        string     `json:"status,omitempty"`
+        BaseChange    string     `json:"base_change,omitempty"`
+        NewBranch     bool       `json:"new_branch,omitempty"`
+        Merge         MergeInput `json:merge,omitempty"`
+        Notify        string     `json:"notify,omitempty"`
+        NotifyDetails NotifyInfo `json:"notify_info,omitempty"`
+}
+
+type MergeInput struct {
+        Source   string `json:"source"`
+        Strategy string `json:"strategy,omitempty"`
+}
+
+type NotifyInfo struct {
+        Accounts []string `json:"accounts,omitempty"`
+}
+
 // LabelInfo entity contains information about a label on a change, always corresponding to the current patch set.
 type LabelInfo struct {
 	Optional bool `json:"optional,omitempty"`
@@ -557,7 +579,7 @@ func (s *ChangesService) getCommentInfoMapSliceResponse(u string) (*map[string][
 }
 
 // CreateChange creates a new change.
-// The change info ChangeInfo entity must be provided in the request body.
+// The change input ChangeInput entity must be provided in the request body.
 // Only the following attributes are honored: project, branch, subject, status and topic.
 // The first three attributes are mandatory.
 // Valid values for status are: DRAFT and NEW.
@@ -565,7 +587,7 @@ func (s *ChangesService) getCommentInfoMapSliceResponse(u string) (*map[string][
 // As response a ChangeInfo entity is returned that describes the resulting change.
 //
 // Gerrit API docs: https://gerrit-review.googlesource.com/Documentation/rest-api-changes.html#create-change
-func (s *ChangesService) CreateChange(input *ChangeInfo) (*ChangeInfo, *Response, error) {
+func (s *ChangesService) CreateChange(input *ChangeInput) (*ChangeInfo, *Response, error) {
 	u := "changes"
 
 	req, err := s.client.NewRequest("POST", u, input)
